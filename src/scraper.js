@@ -1,18 +1,7 @@
 // Web scraping service for BJJ gym schedules
-import puppeteer from 'puppeteer';
-import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
-import { realSchedules } from './gymDatabase.js';
+// NO external dependencies - uses pre-scraped data only
 
-const DAY_MAP = {
-  'sunday': 0, 'sun': 0,
-  'monday': 1, 'mon': 1,
-  'tuesday': 2, 'tue': 2, 'tues': 2,
-  'wednesday': 3, 'wed': 3,
-  'thursday': 4, 'thu': 4, 'thur': 4, 'thurs': 4,
-  'friday': 5, 'fri': 5,
-  'saturday': 6, 'sat': 6
-};
+import { realSchedules } from './gymDatabase.js';
 
 function calculateDistance(lat1, lng1, lat2, lng2) {
   const R = 3959;
@@ -23,38 +12,6 @@ function calculateDistance(lat1, lng1, lat2, lng2) {
             Math.sin(dLng/2) * Math.sin(dLng/2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   return R * c;
-}
-
-function parseTime(timeStr) {
-  if (!timeStr) return null;
-  const cleaned = timeStr.trim().toLowerCase();
-  const match = cleaned.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
-  if (!match) return null;
-  let hours = parseInt(match[1]);
-  const minutes = match[2] ? parseInt(match[2]) : 0;
-  const period = match[3]?.toLowerCase();
-  if (period === 'pm' && hours < 12) hours += 12;
-  if (period === 'am' && hours === 12) hours = 0;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-}
-
-function determineClassType(className) {
-  const name = className.toLowerCase();
-  if (name.includes('no-gi') || name.includes('nogi') || name.includes('no gi')) return 'no-gi';
-  if (name.includes('open mat') || name.includes('openmat') || name.includes('open-mat')) return 'open-mat';
-  if (name.includes('wrestling') || name.includes('wrestle')) return 'wrestling';
-  if (name.includes('fundamentals') || name.includes('basic') || name.includes('beginner')) return 'fundamentals';
-  if (name.includes('gi') || name.includes('bjj')) return 'gi';
-  return 'other';
-}
-
-function determineDifficulty(className) {
-  const name = className.toLowerCase();
-  if (name.includes('advanced') || name.includes('competition') || name.includes('pro')) return 'advanced';
-  if (name.includes('intermediate') || name.includes('advanced beginner')) return 'intermediate';
-  if (name.includes('beginner') || name.includes('fundamental') || name.includes('basic')) return 'beginner';
-  if (name.includes('all levels') || name.includes('all-levels') || name.includes('alllevels')) return 'all-levels';
-  return null;
 }
 
 function generateSampleSchedule() {
@@ -107,17 +64,17 @@ function generateSampleSchedule() {
 
 export async function scrapeGymSchedule(gym) {
   const { id, scrapingStrategy } = gym;
-
+  
   if (scrapingStrategy === 'pre-scraped' && realSchedules[id]) {
     return realSchedules[id];
   }
-
+  
   return generateSampleSchedule();
 }
 
 export async function findGymsNearLocation(lat, lng, radiusMiles) {
   const { knownGyms } = await import('./gymDatabase.js');
-
+  
   return knownGyms
     .map(gym => ({
       ...gym,
